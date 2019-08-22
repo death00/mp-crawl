@@ -1,6 +1,6 @@
 apply plugin: "application"
 
-mainClassName = "com.death00StartServer.StartServer"
+mainClassName = "com.death00.StartServer"
 
 configurations {
     compile.exclude module: 'spring-boot-starter-tomcat'

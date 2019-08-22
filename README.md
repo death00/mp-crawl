@@ -21,6 +21,10 @@ gradlew clean build
 
 命令运行完成后，`dashboard-service`的`build/distributions`目录下会生成相应的打包文件
 
+## 测试网站地址
+
+http://182.61.187.32/dashboard-service
+
 ## API列表
 
 ### 添加抓取任务
