@@ -23,13 +23,13 @@ gradlew clean build
 
 ## 测试网站地址
 
-http://www.death00.top/mp-crawl
+https://www.death00.top/mp-crawl
 
 ## API列表
 
 ### 添加抓取任务
 
-请求url `/dashboard-service/crawl/add`
+请求url `/crawl/add`
 
 传入参数
 ```
@@ -40,7 +40,7 @@ endDateStr 查询的结束日期
 ```
 ### 检查任务爬取的状态
 
-请求url `/dashboard-service/crawl/check`
+请求url `/crawl/check`
 
 传入参数
 ```
