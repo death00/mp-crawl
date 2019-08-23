@@ -1,4 +1,4 @@
-# wechat-mp-data-crawl
+# mp-crawl
 
 微信公众平台数据爬取
 
