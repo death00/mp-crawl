@@ -23,7 +23,7 @@ gradlew clean build
 
 ## 测试网站地址
 
-http://182.61.187.32/dashboard-service
+http://www.death00.top/dashboard-service
 
 ## API列表
 
