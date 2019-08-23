@@ -23,7 +23,7 @@ gradlew clean build
 
 ## 测试网站地址
 
-http://www.death00.top/dashboard-service
+http://www.death00.top/mp-crawl
 
 ## API列表
 
