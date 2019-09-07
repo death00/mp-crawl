@@ -1,5 +1,6 @@
 package com.death00.config;
 
+import com.death00.interceptor.LoggingClientHttpRequestInterceptor;
 import com.death00.service.HttpClientService;
 import com.death00.service.MpCrawlService;
 import com.google.common.base.Preconditions;
@@ -8,6 +9,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.http.nio.reactor.IOReactorException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -48,5 +50,10 @@ public class ServiceConfig {
         if (httpClientService != null) {
             httpClientService.shutdownServer();
         }
+    }
+
+    @Bean
+    public LoggingClientHttpRequestInterceptor loggingClientHttpRequestInterceptor() {
+        return new LoggingClientHttpRequestInterceptor();
     }
 }

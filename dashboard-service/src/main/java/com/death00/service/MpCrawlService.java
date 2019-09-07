@@ -3,10 +3,14 @@ package com.death00.service;
 import com.death00.command.CrawlResult;
 import com.death00.command.CrawlState;
 import com.death00.constant.MpCrawlUrl;
+import com.death00.interceptor.LoggingClientHttpRequestInterceptor;
+import com.death00.param.AdInfoQueryParam;
+import com.death00.param.TimeRangeParam;
 import com.death00.util.LogUtil;
 import com.death00.util.TimeUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -16,9 +20,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +40,7 @@ import org.apache.http.HeaderElement;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.HTTP;
@@ -44,6 +52,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -73,7 +82,8 @@ public class MpCrawlService extends Thread {
     private final CloseableHttpClient httpClient;
 
     @Autowired
-    public MpCrawlService(HttpClientService httpClientService) {
+    public MpCrawlService(
+            HttpClientService httpClientService) {
         Preconditions.checkNotNull(httpClientService);
         httpClient = httpClientService.createHttpClient(300, 300, 2000);
 
@@ -81,7 +91,10 @@ public class MpCrawlService extends Thread {
         // 设置超时
         requestFactory.setConnectTimeout(15 * 1000);
         requestFactory.setReadTimeout(15 * 1000);
-        restTemplate = new RestTemplate(requestFactory);
+        restTemplate = new RestTemplate(
+                new BufferingClientHttpRequestFactory(requestFactory));
+        restTemplate.setInterceptors(
+                Collections.singletonList(new LoggingClientHttpRequestInterceptor()));
     }
 
     //endregion
@@ -227,6 +240,112 @@ public class MpCrawlService extends Thread {
 
         // 获取统计数据
         getStatisticData(task);
+
+        // 获取广告投放数据
+        getAdInfo(task);
+    }
+
+    /**
+     * 获取广告投放相关的数据
+     */
+    private void getAdInfo(CrawlResult result) {
+        Preconditions.checkNotNull(result);
+
+        Date date = TimeUtil.getCurDate();
+        String dateStr = TimeUtil.getDateStrByDate(date);
+        // 三个月之前
+        String threeMonthAgo = TimeUtil.minusDays(dateStr, 3 * 30);
+
+        List<String> query_index = Lists.newArrayList(
+                "material_preview",
+                "day_budget",
+                "cname",
+                "product_type",
+                "contract_flag",
+                "status",
+                "exposure_score",
+                "budget",
+                "bid_action_type",
+                "bid",
+                "bid_avg",
+                "paid",
+                "exp_pv",
+                "clk_pv",
+                "ctr",
+                "comindex_name",
+                "conv_index",
+                "conv_index_cpa",
+                "conv_index_cvr",
+                "comindex",
+                "cpa",
+                "begin_time",
+                "end_time",
+                "auto_compensate_money"
+        );
+
+        AdInfoQueryParam param = AdInfoQueryParam.builder()
+                .op_type(1)
+                .where(new Object())
+                .page(1)
+                .page_size(20)
+                .pos_type(997)
+                .advanced(true)
+                .create_time_range(
+                        TimeRangeParam.builder()
+                                .start_time(
+                                        TimeUtil.getStartTimestampByDateStr(threeMonthAgo) / 1000)
+                                .last_time(TimeUtil.getEndTimestampByDateStr(dateStr) / 1000)
+                                .build()
+                )
+                .query_index(gson.toJson(query_index))
+                .time_range(
+                        TimeRangeParam.builder()
+                                .start_time(TimeUtil.getStartTimestampByDateStr(dateStr) / 1000)
+                                .last_time(TimeUtil.getEndTimestampByDateStr(dateStr) / 1000)
+                                .build()
+                ).build();
+
+        // 构造请求头
+        HttpHeaders httpHeader = getHeader(result.getCookies());
+        // 构造请求
+        HttpEntity<Map> requestEntity = new HttpEntity<>(httpHeader);
+        // 构造uri，因为可以直接对url中的参数进行编码
+        URI uri;
+        try {
+            uri = new URIBuilder()
+                    .setScheme("https")
+                    .setHost("mp.weixin.qq.com")
+                    .setPath("/promotion/as_rock")
+                    .addParameter("action", "get_campaign_data")
+                    .addParameter("args", gson.toJson(param))
+                    .addParameter("token", result.getUrlToken())
+                    .addParameter("appid", "")
+                    .addParameter("spid", "")
+                    .addParameter("_", String.valueOf(TimeUtil.getCurTime()))
+                    .build();
+        } catch (Exception e) {
+            logger.error(
+                    "getAdInfo new URIBuilder() fail, exception : {}",
+                    LogUtil.extractStackTrace(e)
+            );
+            return;
+        }
+
+        // 发送请求
+        ResponseEntity<Map> forEntity = restTemplate.exchange(
+                uri,
+                HttpMethod.GET,
+                requestEntity,
+                Map.class
+        );
+        // 获得返回值
+        Map body = forEntity.getBody();
+        if (body == null) {
+            return;
+        }
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        logger.info("getAdInfo : {}", gson.toJson(body));
     }
 
     /**

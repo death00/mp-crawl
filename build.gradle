@@ -25,6 +25,7 @@ subprojects {
         springVersion = "5.0.6.RELEASE"
         springBootVersion = "2.0.4.RELEASE"
         springDataMongoDB = "2.0.9.RELEASE"
+        jodaTimeVersion = "2.10"
 
         log4jVersion = "1.2.17"
         slf4jVersion = "1.7.21"
