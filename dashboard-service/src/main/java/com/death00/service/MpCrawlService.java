@@ -235,11 +235,11 @@ public class MpCrawlService extends Thread {
         }
         task.setState(CrawlState.SET_MP_SESSION);
 
-        // 获取广告收入
-        getAdIncome(task);
-
         // 获取统计数据
         getStatisticData(task);
+
+        // 获取广告收入
+        getAdIncome(task);
 
         // 获取广告投放数据
         getAdInfo(task);

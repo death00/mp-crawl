@@ -302,3 +302,32 @@ method : POST
 
 4. 此时任务状态变为`SET_MP_SESSION`
 
+### 获取小游戏相关的统计数据
+
+1. 获取小游戏的基本数据(概况、实时统计、访问分析、收入分析、用户画像)
+
+2. 请求内容
+```
+url : https://game.weixin.qq.com/cgi-bin/gamewxagbdatawap/getwxagstatmp
+method : POST
+请求头增加内容：
+  Content-Type : application/x-www-form-urlencoded; charset=UTF-8
+```
+
+### 获取广告投放相关的数据
+
+1. 获取广告主中的数据
+
+2. 请求内容
+```
+url : https://mp.weixin.qq.com/promotion/as_rock
+method : GET
+传入参数：
+    action : get_adgroup_data
+    args : {参考类AdInfoQueryParam}
+    token : 从thirdUrl中获取
+    appid : ""
+    spid : ""
+    _ : 当前时间戳
+```
+
